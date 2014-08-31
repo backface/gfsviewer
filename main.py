@@ -4,10 +4,8 @@
 __version__ = "1.0"
 
 import kivy
-from array import array
 kivy.require('1.8.0') # replace with your current kivy version !
 from kivy.app import App
-from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.uix.carousel import Carousel
 from kivy.uix.boxlayout import BoxLayout
@@ -15,9 +13,7 @@ from kivy.uix.dropdown import DropDown
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.actionbar import *
-from kivy.factory import Factory
 from kivy.clock import Clock
-from kivy.factory import Factory
 from kivy.loader import Loader
 from kivy.uix.progressbar import ProgressBar
 
@@ -72,6 +68,7 @@ class gfsViewerApp(App):
 		self.image = []
 		self.limit = 0
 		self.pb = ""
+		self.src = ""
 
 		Loader.start()
 
@@ -109,7 +106,8 @@ class gfsViewerApp(App):
 			if not ignore:
 
 				#gif images make trouble, conversion happens on server
-				src = "http://m.ash.to/gfsViewer/imgloader.php?file=R%s%02d%d.gif&type=.png" %  \
+				
+				src = self.src  %  \
 					( regions[self.active_region], ((self.loadnum +1) * self.steps), values.index(self.active_value) + 1)						
 			
 				proxyImage = Loader.image(src)	
@@ -154,11 +152,18 @@ class gfsViewerApp(App):
 		if not ignore:		
 			if self.active_region == "M-Europa":
 				self.steps = 3
-				self.limit = 33
+				self.limit = 60
+				
 			else:
 				self.steps = 6
-				self.limit = 18
+				self.limit = 30
+				
 			
+			if self.active_region in ["M-Europa","Europa"]:
+				self.src = "http://m.ash.to/gfsViewer/imgloader.php?file=R%s%02d%d.gif&type=.png"
+			else:
+				self.src = "http://www.wetterzentrale.de/pics/R%s%02d%d.png" 
+				
 			self.loadnum = 0	
 			self.image = []
 			self.last_df = 0
@@ -192,21 +197,33 @@ class gfsViewerApp(App):
 	def build(self):
 		
 		self.icon = 'data/icon-s.png'
-		self.layout = BoxLayout(padding=5,orientation='vertical')
+		self.layout = BoxLayout(orientation='vertical')
 		ab = ActionBar(size_hint=(1,0.08), height="48dp")
 		av = ActionView()
-		av.add_widget(ActionPrevious(title=appTitle,with_previous=True, app_icon=self.icon))
+		av.add_widget(ActionPrevious(title=appTitle,with_previous=False, app_icon=self.icon))
 		ab.add_widget(av)
 		
 		self.layout.add_widget(ab)
-			
+
+		#region_dropdown = DropDown()
+		# disable drop-down options for the moment. 
+		# needs more work (also different value selectors)
+		#for i in regions:
+		#	btn = Button(text=i,  size_hint_y=None, height="48dp")
+		#	btn.bind(on_release=lambda btn: region_dropdown.select(btn.text))
+		#	region_dropdown.add_widget(btn)
+		#	region_dropdown.bind(on_select=lambda instance, x: self._on_region_select(x))			
+		self.region_button = Button(text=self.active_region, size_hint_y=None, height="48dp")
+		#self.region_button.bind(on_release=region_dropdown.open)
+		self.layout.add_widget(self.region_button)	
+					
 		value_dropdown = DropDown()
+		
 		for i in range(len(values)):
 			btn = Button(text=values[i], size_hint_y=None, height="48dp")
 			btn.bind(on_release=lambda btn: value_dropdown.select(btn.text))
 			value_dropdown.add_widget(btn)
 			value_dropdown.bind(on_select=lambda instance, x: self._on_value_select(x))	
-				
 		self.value_button = Button(text=self.active_value, size_hint_y=None, height="48dp")
 		self.value_button.bind(on_release=value_dropdown.open)
 		self.layout.add_widget(self.value_button)		
